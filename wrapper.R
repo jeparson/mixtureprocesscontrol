@@ -160,7 +160,7 @@ GeneralLMest<-function(infile,spikeID="ERCC-",components=c("bep","lep","mep"),mi
 
 }
 #calculates the mRNA fraction of a given count table and returns the normalized component values.  
-
+#making a change to test rstudio integration
 
 makegenericTargetPlot<-function(mprop,mixproportions,components){
 #'Make a target plot from the Model Fit Deconvolution
