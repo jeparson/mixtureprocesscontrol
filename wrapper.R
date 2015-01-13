@@ -53,7 +53,7 @@ deconvolutemix<-function(countdf,pures,mixtures,mixmeasure=TRUE,geneids=1,contro
 
   #first identify if there are replicates
   identifyreplicates<-function(countdf){
-    a<-duplicated(regmatches(colnames(countdf),(regexpr("\\D+",colnames(countdf),perl=TRUE))))
+""    a<-duplicated(regmatches(colnames(countdf),(regexpr("\\D+",colnames(countdf),perl=TRUE))))
   }
   a<-identifyreplicates(countdf)
  
@@ -180,7 +180,7 @@ if(!length(levels(mprop$Var1)==2)){stop("I'm confused by the number of different
 #do the plotting
 ###things that need changing: 1) ylimits 2) labels 3) central points 4) circle centers, number of circles, place circles come from, datasource for geom_pointrange and geom_errorbarh
 g+geom_point(aes(x=value,y=dval,color=(method),pch=method),alpha=0.65,size=4)+coord_cartesian(ylim=c(0.1,0.4),xlim=c(0.6,0.9))+
-  facet_wrap(~ site)+ylab(paste("Amount of",names(mprop)[components][1])+xlab("Amount of ",names(mprop)[components][1])+geom_point(aes(x=mixproportions[1,1],y=[1,2]),col="grey70")+theme(legend.position="none")+
+  facet_wrap(~ site)+ylab(paste("Amount of",names(mprop)[components][1]))+xlab("Amount of ",names(mprop)[components][1])+geom_point(aes(x=mixproportions[1,1],y=mixproportions[1,2]),col="grey70")+theme(legend.position="none")+
   geom_path(data=circleFun(center=c(mixproportions[1,1],mixproportions[1,2]),diameter=0.1,npoints=25),aes(x,y),col="grey")+
   geom_path(data=circleFun(center=c(mixproportions[1,1],mixproportions[1,2]),diameter=0.05,npoints=25),aes(x,y),col="grey")+
   theme(panel.grid.major=element_blank(),panel.grid.minor=element_blank())+theme(panel.margin=unit(1,"cm"))+theme(aspect.ratio=1)+

@@ -87,9 +87,7 @@ makeTargetPlot<-function(type="BLM",df,df2,Discriminator="CheeseValue"){
   
 }
 
-blmmixfraction<-
-  
-  function(subdf){
+blmmixfraction<-function(subdf){
     
     value<-unname(lm(subdf[,2]~subdf[,12]+subdf[,13]+subdf[,14]+0)$coefficients/sum(lm(subdf[,2]~subdf[,12]+subdf[,13]+subdf[,14]+0)$coefficients))
     value1<-unname(lm(subdf[,3]~subdf[,12]+subdf[,13]+subdf[,14]+0)$coefficients/sum(lm(subdf[,3]~subdf[,12]+subdf[,13]+subdf[,14]+0)$coefficients))
