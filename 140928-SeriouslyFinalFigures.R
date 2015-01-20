@@ -50,8 +50,8 @@ dendrogramplot<-function(testing=FALSE){
 rm(clusMember,labelColors,pos=1)
 return(output)
 }
-#Supplemental Figure 1b: just call sf1b
-sf1b<-function(){
+#Supplemental Figure 2b
+sf2b<-function(){
 adf<-(subset(rbind(assignIdentity(makerefmetdfb(norm=0)),assignIdentity(makerefmetdfb(norm=1)),assignIdentity(makerefmetdfb(norm="UQN"))),identity!="unclassified"))
 adf$norm<-as.factor(adf$norm);levels(adf$norm)[1]<-"None";levels(adf$norm)[2]<-"Library Size";levels(adf$norm)[3]<-"Upper Quartile" #just some sad cleaning...
 adf$norm<-relevel(adf$norm,ref="None")
@@ -62,7 +62,7 @@ return(print(g+geom_point(data=subset(adf,identity!="unclassified"),aes(x=log2(a
   xlab("Mean Counts (BLM-1+BLM-2)")+ylab("Ratio of counts (BLM-1/BLM-2)")+theme(strip.text.x=element_text(size=24))+theme(axis.title=element_text(size=24))+theme(axis.text=element_text(size=20))+
   guides(colour=guide_legend(override.aes=list(size=5)))))
 }
-sf1a<-function(){
+sf2a<-function(){
   gdfa<-(assignIdentity(makerefmetdfb(norm="UQN")))
   gdfa$plat<-"HiSeq"
   gdfa$mrat<-calcmrnafrac(gdfa)[7]/calcmrnafrac(gdfa)[1] # since the plot is comparing A1 to A2, I take the ratio of their mrna fractions as a term to use later.  
@@ -83,8 +83,8 @@ sf1a<-function(){
     theme(axis.title=element_text(size=24))+theme(axis.text=element_text(size=20))+geom_point(data=subset(gdf,identity=="external"),aes(y=log2(a1*mrat/pme),x=log2(a1/mrat*pme)/2,col=identity,size=identity))  
 }
 
-#Supplemental Figure2:
-sf2<-function(indf){
+#Supplemental Figure1:
+sf1<-function(indf){
   require(reshape2)
   if(missing(indf)){
     indf<-makeseqcdf()}
