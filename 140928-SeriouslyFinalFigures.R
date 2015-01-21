@@ -185,7 +185,21 @@ g+geom_point(aes(x=value,y=dval,color=(method),pch=method),alpha=0.65,size=4)+co
   geom_pointrange(data=fmean,aes(x=meanc,y=meand,ymax=meand+2*sdd,ymin=meand-2*sdd),size=1.15,shape=1)+geom_errorbarh(data=fmean,aes(x=meanc,y=meand,xmax=meanc+2*sdc,xmin=meanc-2*sdc),size=1.3)
 #if axes along each facet are needed, http://stackoverflow.com/questions/17661052/force-x-axis-text-on-for-all-facets-of-a-facet-grid-plot # it's not simple though...
 }#SF4.
+#Supplemental Table1:
+stab1<-function(){
+Figure2<-makerefmetdfb(platform = "5500",norm=0) #we use the 5500 data here because the Illumina data has some inconsistencies with the actual spike-in mix amounts.  Those inconsistencies don't affect
+#ratios, just the absolute values, and it's a pain to understand/explain, but the 5500 data illustrate it just fine.
+count<-rbind(colSums(Figure2b2[match(ercc96$name[ercc96$pool=="C"],Figure2b2$gene_id),2:14]),colSums(Figure2b2[grep("ERCC-",Figure2b2$gene_id,invert=TRUE),2:14]))
+#must only consider the C subpool of erccs here because pools A and B have designed differences between BLM1a and BLM1b (mixa having 2x as much pool a as mixb)
+#I can't conceptually justify this distinction, but it is absolutely important.
+#You can get the correct ratios from pool A or pool B after you account for the differences in designed spike-in amount,
+#but for a reason that i don't understand, you can NOT just look at the entire set of 96 spike-ins as a whole and assume that the subpools even out (even though they were designed to do so!)
+ercc.targ <- c(.08,.08/8,.08*8,.08,.08/8,.08*8,.08,.08,.08/8,.08*8,.003,.003,.003)
+table<-rbind(count[1,]/count[2,],ercc.targ,ercc.targ*count[2,]/count[1,])
+rownames(table)<-c("ERCC Count Ratio","ERCC spike proportion","Rho")
 
+return(table)
+}
 circleFun<-function(center = c(0,0),diameter = 1, npoints = 100){
   r = diameter / 2
   tt <- seq(0,2*pi,length.out = npoints)
@@ -1000,27 +1014,27 @@ calcmrnafrac<-function(dat,selection=2:14,e5=FALSE,type,ret=0){
     ercc.targ[grep("d",colnames(count))]<-ercc.targ[grep("d",colnames(count))]/8
     ercc.targ[grep("u",colnames(count))]<-ercc.targ[grep("u",colnames(count))]*8
     mRNA.frac<-ercc.targ*count[2,]/count[1,]
-    if(ety==3){
+    #if(ety==3){ #this whole block is causing me problems and i don't THINK it's necessary anymore
       #wish to exclude sample5?  The flag is e5.
-      if(e5==FALSE){
-        mRNA.A<-mRNA.frac[grep("A",names(mRNA.frac))]
-        mRNA.A<-mean(mRNA.A,na.rm=TRUE)
-        mRNA.B<-mRNA.frac[grep("B",names(mRNA.frac))]
-        mRNA.B<-mean(mRNA.B,na.rm=TRUE)
-        mRNA.Anorm<-mRNA.A/(mRNA.A+mRNA.B)
-        mRNA.Bnorm<-mRNA.B/(mRNA.B+mRNA.A)
-        mRNA.frac<-c(mRNA.Anorm,mRNA.Bnorm)
-      }
-      if(e5==TRUE){
-        mRNA.A<-mRNA.frac[grep("A[1-4]",names(mRNA.frac))]
-        mRNA.B<-mRNA.frac[grep("B[1-4]",names(mRNA.frac))]
-        mRNA.A<-mean(mRNA.A,na.rm=TRUE)
-        mRNA.B<-mean(mRNA.B,na.rm=TRUE)
-        mRNA.Anorm<-mRNA.A/(mRNA.A+mRNA.B)
-        mRNA.Bnorm<-mRNA.B/(mRNA.B+mRNA.A)
-        mRNA.frac<-c(mRNA.Anorm,mRNA.Bnorm)
-      }
-    }
+    #  if(e5==FALSE){
+    #    mRNA.A<-mRNA.frac[grep("A",names(mRNA.frac))]
+    #    mRNA.A<-mean(mRNA.A,na.rm=TRUE)
+    #    mRNA.B<-mRNA.frac[grep("B",names(mRNA.frac))]
+    #    mRNA.B<-mean(mRNA.B,na.rm=TRUE)
+    #    mRNA.Anorm<-mRNA.A/(mRNA.A+mRNA.B)
+    #    mRNA.Bnorm<-mRNA.B/(mRNA.B+mRNA.A)
+    #    mRNA.frac<-c(mRNA.Anorm,mRNA.Bnorm)
+    #  }
+    #  if(e5==TRUE){
+    #    mRNA.A<-mRNA.frac[grep("A[1-4]",names(mRNA.frac))]
+    #    mRNA.B<-mRNA.frac[grep("B[1-4]",names(mRNA.frac))]
+    #    mRNA.A<-mean(mRNA.A,na.rm=TRUE)
+    #    mRNA.B<-mean(mRNA.B,na.rm=TRUE)
+    #    mRNA.Anorm<-mRNA.A/(mRNA.A+mRNA.B)
+    #    mRNA.Bnorm<-mRNA.B/(mRNA.B+mRNA.A)
+    #    mRNA.frac<-c(mRNA.Anorm,mRNA.Bnorm)
+    #  }
+    #}
     if(ret!=0){return(count)}
     return(mRNA.frac)
   } #calculates the mRNA fraction of a makerefmetdfb-created dataframe (calcmrnafrageneral is more accomomdating of other input files)
@@ -1277,3 +1291,71 @@ GeneralLMest<-function(infile,spikeID="ERCC-",components=c("bep","lep","mep"),mi
   return(rdf)
 }
 }
+mfdb<-function(df){
+  outfrac<-NULL
+  for(I in levels(as.factor(df$site))){
+    tmp<-subset(df,site==I)
+    for(J in 3:18){
+      tmp[,J]<-tmp[,J]/sum(tmp[,J])*4e8
+    }#normalization of various sites/librariesn
+    tmp$repA<-rowMeans(tmp[,3:6])
+    tmp$repB<-rowMeans(tmp[,7:10])
+    tmp$repC<-rowMeans(tmp[,11:14])
+    tmp$repD<-rowMeans(tmp[,15:18])
+    #means
+    mfrac<-calcmrnafrac(tmp,selection = c(19:22))
+    outfrac<-rbind(outfrac,mfrac)
+  }
+  outfrac2<-outfrac
+  outfrac2[,1]<-outfrac[,1]/(outfrac[,1]+outfrac[,2])
+  outfrac2[,2]<-outfrac[,2]/(outfrac[,1]+outfrac[,2])
+  outfrac2[,3]<-outfrac[,3]/(outfrac[,1]+outfrac[,2])
+  outfrac2[,4]<-outfrac[,4]/(outfrac[,1]+outfrac[,2])
+  #this normalizes the mRNA content - making the output effectively the A:B ratio
+  return(outfrac)}
+
+normcountdf<-function(tdf,normtype){
+    if(normtype==0){
+    return(tdf)}
+  if(normtype==1){
+    tdf$norm<-"LSN"
+    maxct<-max(colSums(tdf[,2:11]))
+    #    sums<-colSums(tdf[,2:11])
+    #    tdf$sums<-1
+    #    tdf$sums[1:10]<-sums
+    for(I in 2:11){
+      tdf[,I]<-tdf[,I]*maxct/sum(tdf[,I])
+    }
+    return(tdf)
+  }
+  if(normtype=="UQN"){
+    library(edgeR)
+    tdf$norm<-"UQN"
+    nfac<-c(calcNormFactors(tdf[2:11],method="upperquartile"),calcNormFactors(tdf[12:14],method="upperquartile"))
+    #    nfac<-c(nfac,calcNormFactors(tdf[12:14]))
+    for(I in 2:14){tdf[I]<-tdf[I]*nfac[I-1]}
+    return(tdf)
+  }
+  if(normtype=="TMM"){
+    tdf$norm<-"TMM"
+    library(edgeR)
+    nfac<-c(calcNormFactors(tdf[2:11]),calcNormFactors(tdf[12:14]))
+    #    nfac<-c(nfac,calcNormFactors(tdf[12:14]))
+    for(I in 2:14){tdf[I]<-tdf[I]*nfac[I-1]}
+    return(tdf)
+  }
+  if(normtype=="RLE"){
+    tdf$norm<-"RLE"
+    library(edgeR)
+    nfac<-c(calcNormFactors(tdf[2:11],method="RLE"),calcNormFactors(tdf[12:14],method="RLE"))
+    #    nfac<-c(nfac,calcNormFactors(tdf[12:14]))
+    for(I in 2:14){tdf[I]<-tdf[I]*nfac[I-1]}
+    return(tdf)}
+  if(normtype=="RLENE"){
+    tdf$norm<-"RLENE"
+    library(edgeR)
+    nfac<-c(calcNormFactors(tdf[grep("ERCC-",tdf$gene_id),2:11],method="RLE"),calcNormFactors(tdf[grep("ERCC-",tdf$gene_id),12:14],method="RLE"))
+    #    nfac<-c(nfac,calcNormFactors(tdf[12:14]))
+    for(I in 2:14){tdf[I]<-tdf[I]*nfac[I-1]}
+    return(tdf)}
+  return(0)}
