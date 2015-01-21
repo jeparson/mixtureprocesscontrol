@@ -4,6 +4,7 @@ require(data.table)||install.packages(data.table)
 require(ggplot2)||install.packages(ggplot2)
 require(reshape2)||install.packages(reshape2)
 require(DESeq2)||install.packages(DESeq2)
+require(grid)||install.packages(grid)
 #The (ACTUAL) Figure code used in the manuscript for blm as of 14/09/29.  No changes to the figures will be made other than through this code!
 #Except figure 1, because figure 1 is from a powerpoint.  Fig1BW.ppt
 
@@ -120,8 +121,10 @@ sf1<-function(indf){
 }#SF2.
 
 #Supplemental Figure3:
-sf3<-function(){makeTargetPlot(df=makerefmetdfb(norm="UQN",mapper="RSEM",method="RSEM",readtype="mostcomplex"),
-                               df2 = makerefmetdfb(norm="UQN",mapper="RSEM",method="RSEM",readtype = "default"),Discriminator = "FPKM",numrings = 2)}
+sf3<-function(){figure<-makeTargetPlot(df=makerefmetdfb(norm="UQN",mapper="RSEM",method="RSEM",readtype="mostcomplex"),
+                               df2 = makerefmetdfb(norm="UQN",mapper="RSEM",method="RSEM",readtype = "default"),Discriminator = "FPKM",numrings = 2)
+figure+scale_alpha_manual(name="Unit",breaks=c(0,1),labels=c("Count","FPKM"),values=c(0.3,1))}
+
 #Supplemental Figure4:
 sf4<-function(indf){
   require(reshape2)
