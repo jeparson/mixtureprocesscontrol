@@ -5,6 +5,7 @@ require(ggplot2)||install.packages(ggplot2)
 require(reshape2)||install.packages(reshape2)
 require(DESeq2)||install.packages(DESeq2)
 require(grid)||install.packages(grid)
+require(dplyr)||install.packages(dplyr)
 #The (ACTUAL) Figure code used in the manuscript for blm as of 14/09/29.  No changes to the figures will be made other than through this code!
 #Except figure 1, because figure 1 is from a powerpoint.  Fig1BW.ppt
 
@@ -89,14 +90,20 @@ sf1<-function(indf){
   require(reshape2)
   if(missing(indf)){
     indf<-makeseqcdf()}
-  
+  #do UQN for ILM sites:
+  indfILM<-subset(indf,!site%in%c("NWU","PSU","SQW")) #subset to ILM only  
+  indfILM$site<-droplevels(indfILM$site) #clear out those pesky empty factor levels
+  indfILM<-normalizeSEQC(indfILM,type="Both")
+  indfLT<-subset(indf,site%in%c("NWU","PSU","SQW"))
+  indf<-rbind(indfILM,indfLT)
   final<-NULL
   dset<-cbind(indf[,1:2],rowMeans(indf[,3:6]),rowMeans(indf[,7:10]),(indf[,11:14]),(indf[,15:18]))
   names(dset)<-c("gene_id","site","A","B","C","C","C","C","D","D","D","D")
   
   for(I in levels(as.factor(dset$site))){
+
     modeled<-SEQClm(subset(indf,site==I))
-    modeled<-melt(modeled);modeled$site<-I;modeled$mix<-c(rep("C",4),rep("D",4));modeled$variable<-"A"
+    modeled<-suppressMessages(melt(modeled));modeled$site<-I;modeled$mix<-c(rep("C",4),rep("D",4));modeled$variable<-"A"
     final<-rbind(modeled,final)
   }
   #calculates meanvalues
@@ -118,7 +125,7 @@ sf1<-function(indf){
     theme(legend.text=element_text(size=rel(1.4)))+theme(axis.title=element_text(size=rel(1.6)))+theme(axis.text=element_text(size=rel(1)))+theme(strip.background = element_rect(fill = 'white'))+theme(strip.text=element_text(size=rel(1.3)))+
     geom_pointrange(data=fmean,aes(x=meanc,y=meand,ymax=meand+2*sdd,ymin=meand-2*sdd),size=1.15,shape=1)+geom_errorbarh(data=fmean,aes(x=meanc,y=meand,xmax=meanc+2*sdc,xmin=meanc-2*sdc),size=1.3)
   #if axes along each facet are needed, http://stackoverflow.com/questions/17661052/force-x-axis-text-on-for-all-facets-of-a-facet-grid-plot # it's not simple though...
-}#SF2.
+}#SF1.
 
 #Supplemental Figure3:
 sf3<-function(){figure<-makeTargetPlot(df=makerefmetdfb(norm="UQN",mapper="RSEM",method="RSEM",readtype="mostcomplex"),
@@ -999,6 +1006,7 @@ calcmrnafrac<-function(dat,selection=2:14,e5=FALSE,type,ret=0){
     if(missing(type)){type=1}
     ercc<-rownames(dat)[substr(rownames(dat),1,5)=="ERCC-"]
     if(type!=1){ercc<-rownames(dat)[match(ercc96$V1[ercc96$V4=="C"],rownames(dat))]}              
+    if(type=="f"){ercc<-match(ercc96$uname[ercc96$pool=="C"],dat$gene_id);ercc<-ercc[!is.na(ercc)]}
     if(length(ercc)==0){ety<-2;ercc<-match(ercc96$V9,dat$gene_id);ercc<-ercc[!is.na(ercc)]}
     if(length(ercc)==0){ety<-1;ercc<-grep("ERCC-",dat$gene_id)}
     if(length(ercc)==0){ety<-3;ercc<-grep("ERCC_",dat$gene_id)}
@@ -1059,6 +1067,7 @@ nonercc<-!(1:length(dat[,countcolumns[1]]))%in%ercc
 }
 normalizeSEQC<-function(stuff=SEQCDF,type="UQN"){
   fmol<-NULL
+
   if(type=="UQN"){for(I in levels(as.factor(stuff$site))){
   require(edgeR)
     tmp<-subset(stuff,site==I)
@@ -1099,12 +1108,13 @@ normalizeSEQC<-function(stuff=SEQCDF,type="UQN"){
     }
     return((fmox))
   }
-}#normalizes SEQC dataframes by various methods.  You know, to NORMALIZE.
+}#normalizes SEQC dataframes by various methods.  
 SEQClm<-function(infile,e5=TRUE,e4=FALSE,ignoremrna=FALSE,filterercc=FALSE){
   if(e5==FALSE&e4==FALSE){
     infile$Amean<-rowMeans(infile[,grep("A",names(infile))])
     infile$Bmean<-rowMeans(infile[,grep("B",names(infile))])
     mfrac<-calcmrnafrac(infile,selection=c(3:14))
+    #mfrac<-calcmrnafrac(infile,selection=c(3:14),type="f") #this does the calculation using "only" 1:1 subpool.  It doesn't affect anything much.
     c1<-coefficients(lm(data=infile,C1 ~ I(Amean*mfrac[1])+I(Bmean*mfrac[2])+0))/sum(coefficients(lm(data=infile,C1 ~ I(Amean*mfrac[1]) + I (Bmean*mfrac[2])+0)))
     c2<-coefficients(lm(data=infile,C2 ~ I(Amean*mfrac[1])+I(Bmean*mfrac[2])+0))/sum(coefficients(lm(data=infile,C2 ~ I(Amean*mfrac[1]) + I (Bmean*mfrac[2])+0)))
     c3<-coefficients(lm(data=infile,C3 ~ I(Amean*mfrac[1])+I(Bmean*mfrac[2])+0))/sum(coefficients(lm(data=infile,C3 ~ I(Amean*mfrac[1]) + I (Bmean*mfrac[2])+0)))
@@ -1124,7 +1134,9 @@ SEQClm<-function(infile,e5=TRUE,e4=FALSE,ignoremrna=FALSE,filterercc=FALSE){
     infile$Amean<-rowMeans(infile[,grep("A",names(infile))])
     infile$Bmean<-rowMeans(infile[,grep("B",names(infile))])
     mfrac<-c(1,1)
+#   if(ignoremrna==FALSE){mfrac<-calcmrnafrac(infile,selection=c(3:14),type="f")}#this does the calculation using "only" 1:1 subpool.  It doesn't affect anything substantially.
     if(ignoremrna==FALSE){mfrac<-calcmrnafrac(infile,selection=c(3:14))}
+    
         
     c1<-coefficients(lm(data=infile,C1 ~ I(Amean*mfrac[1])+I(Bmean*mfrac[2])+0))/sum(coefficients(lm(data=infile,C1 ~ I(Amean*mfrac[1]) + I (Bmean*mfrac[2])+0)))
     c2<-coefficients(lm(data=infile,C2 ~ I(Amean*mfrac[1])+I(Bmean*mfrac[2])+0))/sum(coefficients(lm(data=infile,C2 ~ I(Amean*mfrac[1]) + I (Bmean*mfrac[2])+0)))
